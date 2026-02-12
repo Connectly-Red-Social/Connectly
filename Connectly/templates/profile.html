@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='output.css') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/2.8.0/alpine.js" defer></script>
+    <style>
+        .post-content { overflow-wrap: anywhere; word-break: break-word; }
+        .card { opacity: 0; transform: translateY(10px); transition: opacity 0.3s ease, transform 0.3s ease; }
+        .card-visible { opacity: 1; transform: translateY(0); }
+        #loader { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2em; color: #3498db; }
+    </style>
+</head>
+<body class="bg-gray-100 font-[Poppins] max-w-full mx-auto">
+
+    <div id="loader">Cargando...</div>
+
+    <div class="lg:w-[300px] fixed lg:relative inset-y-0 z-40 bg-gray-900">
+        {% include 'sidebar.html' %}
+    </div>  
+
+    <div class="lg:ml-[300px] p-8 mt-16 lg:mt-0 transition-all duration-300 ease-in-out" id="main-content">
+        
+        <div class="bg-white shadow-md rounded-lg p-6 flex flex-col sm:flex-row items-center sm:space-x-6 mb-8">
+            <img src="{{ user['profile_image'] }}" alt="Foto de perfil de {{ user['name'] }}" 
+                 class="w-24 h-24 rounded-full border-4 border-blue-500 shadow-lg mb-4 sm:mb-0">
+            <div class="text-center sm:text-left">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">{{ user['name'] }}</h1>
+                <p class="text-gray-500 text-lg"><strong>Interés principal:</strong> {{ user['interest'] }}</p>
+                <p id="secondInterest" class="text-gray-500 text-lg"><strong>Segundo interés:</strong> Cargando...</p>
+                <div class="mt-4 flex flex-col sm:flex-row justify-center sm:justify-start sm:space-x-8">
+                    <div class="flex justify-center sm:justify-start space-x-8">
+                        <div>
+                            <strong class="text-lg">{{ post_count }}</strong>
+                            <p class="text-sm text-gray-600">Publicaciones</p>
+                        </div>
+                        <div>
+                            <strong id="followerCount" class="text-lg cursor-pointer" onclick="openModal('followers')">{{ follower_count }}</strong>
+                            <p class="text-sm text-gray-600">Seguidores</p>
+                        </div>
+                        <div>
+                            <strong id="followingCount" class="text-lg cursor-pointer" onclick="openModal('following')">{{ following_count }}</strong>
+                            <p class="text-sm text-gray-600">Seguidos</p>
+                        </div>
+                    </div>
+        
+                    {% if not is_own_profile %}
+                    <div class="mt-4 sm:mt-0 flex justify-center sm:justify-start">
+                        {% if is_following %}
+                            <button 
+                                onclick="toggleUnfollowProfile({{ user['user_id'] }}, this)" 
+                                class="border-red-500 text-black px-4 py-2 md:px-6 md:py-3 rounded-lg border-2 text-sm md:text-base w-full sm:w-auto">
+                                Dejar de seguir
+                            </button>
+                        {% else %}
+                            <button 
+                                onclick="toggleFollowProfile({{ user['user_id'] }}, this)" 
+                                class="border-blue-500 text-black px-4 py-2 md:px-6 md:py-3 rounded-lg border-2 text-sm md:text-base w-full sm:w-auto">
+                                Seguir
+                            </button>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div id="modalOverlay" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 hidden z-40" onclick="closeModal(event)">
+            <span class="absolute top-4 right-4 text-white text-3xl cursor-pointer" onclick="closeModal(event)">×</span>
+            <div id="modalContentContainer" class="bg-white p-6 rounded-lg w-11/12 max-w-4xl md:max-w-2xl lg:max-w-3xl max-h-[80%] overflow-y-auto" onclick="event.stopPropagation()">
+                <div id="modalContent">Cargando...</div>
+            </div>
+        </div>
+        
+        <!-- Publicaciones -->
+        <div class="mb-8" 
+     x-data="{ 
+        currentSlide: 0, 
+        postsPerSlide: window.innerWidth > 1200 ? 3 : window.innerWidth >= 640 ? 2 : 1, 
+        totalSlides: Math.ceil({{ user_posts|length }} / (window.innerWidth > 1200 ? 3 : window.innerWidth >= 640 ? 2 : 1)),
+        hasPosts: {{ 'true' if user_posts else 'false' }}
+    }" 
+     x-init="
+        window.addEventListener('resize', () => {
+            postsPerSlide = window.innerWidth > 1200 ? 3 : window.innerWidth >= 640 ? 2 : 1;
+            totalSlides = Math.ceil({{ user_posts|length }} / postsPerSlide);
+            currentSlide = Math.min(currentSlide, totalSlides - 1);
+        });
+    ">
+       <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+           {% if is_own_profile %}
+               Mis Publicaciones
+           {% else %}
+               Publicaciones de {{ user['name'] }}
+           {% endif %}
+       </h2>
+   
+       <template x-if="!hasPosts">
+        <div class="text-center">
+            {% if is_own_profile %}
+                <p class="text-gray-600 mb-4">No tienes publicaciones recientes.</p>
+                <p class="text-blue-500 cursor-pointer hover:underline" onclick="window.location.href='/create_post'">¡Crea tu primera publicación!</p>
+            {% else %}
+                <p class="text-gray-600 mb-4">{{ user['name'] }} no tiene publicaciones recientes.</p>
+            {% endif %}
+        </div>
+    </template>
+    
+   
+       <div class="relative overflow-hidden group p-6" x-show="hasPosts">
+           <button @click="currentSlide = currentSlide > 0 ? currentSlide - 1 : totalSlides - 1" 
+                   class="absolute top-1/2 left-2 transform -translate-y-1/2 bg-gray-700 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 text-xl z-10 shadow-lg transition-all duration-200">
+               &#10094;
+           </button>
+   
+           <div class="flex transition-transform duration-500 ease-out" 
+                :style="`transform: translateX(-${currentSlide * 100}%)`">
+               {% for post in user_posts %}
+                   <div :class="{ 'w-full sm:w-1/2 lg:w-1/3': true }" class="flex-shrink-0 p-2" :style="`width: calc(100% / ${postsPerSlide});`">
+                       <div class="bg-white p-4 rounded-lg shadow-md transition transform hover:scale-[1.02] card" style="min-height: 400px; overflow: hidden;">
+                           <div class="flex justify-between items-start mb-4">
+                               <div x-data="{ expanded: false, contentExceedsLimit: false }" x-init="
+                                   $nextTick(() => {
+                                       const content = $refs.content;
+                                       if (content.scrollHeight > 200) {
+                                           contentExceedsLimit = true;
+                                       }
+                                   });
+                               ">
+                                   <p x-ref="content" class="text-gray-700 post-content" :class="expanded ? '' : 'line-clamp-4'" style="overflow-wrap: break-word;">
+                                       {{ post.Content }}
+                                   </p>
+                                   <button x-show="contentExceedsLimit" @click="expanded = !expanded" class="text-blue-500 text-sm mt-2">
+                                       <span x-show="!expanded">Ver más</span>
+                                       <span x-show="expanded">Ver menos</span>
+                                   </button>
+                               </div>
+   
+                               {% if is_own_profile %}
+                                   <button @click="deletePost('{{ post.PostID }}')" class="text-red-500 hover:text-red-700 ml-4 text-2xl">
+                                       <i class="bi bi-trash"></i>
+                                   </button>
+                               {% endif %}
+                           </div>
+                           <p class="text-gray-500 text-sm">{{ post.PostDate.strftime('%Y-%m-%d %H:%M') }}</p>
+                           {% if post.Image %}
+                               <div class="w-full h-72 overflow-hidden rounded-lg mt-4">
+                                   <img src="{{ post.Image }}" alt="Imagen del post" class="w-full h-full object-cover">
+                               </div>
+                           {% endif %}
+                       </div>
+                   </div>
+               {% endfor %}
+           </div>
+   
+           <button @click="currentSlide = currentSlide < totalSlides - 1 ? currentSlide + 1 : 0" 
+                   class="absolute top-1/2 right-2 transform -translate-y-1/2 bg-gray-700 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 text-xl z-10 shadow-lg transition-all duration-200">
+               &#10095;
+           </button>
+   
+           <div class="flex justify-center mt-4 space-x-2">
+               <template x-for="i in totalSlides">
+                   <div :class="{'bg-blue-500': i - 1 === currentSlide, 'bg-gray-300': i - 1 !== currentSlide}"
+                        class="w-3 h-3 rounded-full cursor-pointer transition-all duration-300"
+                        @click="currentSlide = i - 1"></div>
+               </template>
+           </div>
+       </div>
+   </div>
+   
+   {% if is_own_profile %}
+   <div class="mb-8"
+        x-data="{ 
+            currentSlide: 0, 
+            recsPerSlide: Math.max(window.innerWidth >= 1280 ? 4 : window.innerWidth >= 1024 ? 3 : window.innerWidth >= 640 ? 2 : 1, 1),
+            totalRecSlides: Math.ceil({{ recommended_users|length }} / Math.max(window.innerWidth >= 1280 ? 4 : window.innerWidth >= 1024 ? 3 : window.innerWidth >= 640 ? 2 : 1, 1))
+        }"
+        x-init="window.addEventListener('resize', () => {
+            recsPerSlide = Math.max(window.innerWidth >= 1280 ? 4 : window.innerWidth >= 1024 ? 3 : window.innerWidth >= 640 ? 2 : 1, 1);
+            totalRecSlides = Math.ceil({{ recommended_users|length }} / recsPerSlide);
+            currentSlide = Math.min(currentSlide, totalRecSlides - 1);
+        });"
+   >
+       <h2 class="text-2xl font-semibold text-gray-800 mb-4">Sugerencias para ti</h2>
+       <div class="relative overflow-hidden group">
+           <!-- Botón izquierdo -->
+           <button 
+               @click="currentSlide = currentSlide > 0 ? currentSlide - 1 : totalRecSlides - 1"
+               class="absolute top-1/2 left-2 transform -translate-y-1/2 bg-gray-700 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 text-xl z-10 shadow-lg transition-all duration-200">
+               &#10094;
+           </button>
+   
+           <!-- Contenedor de las recomendaciones -->
+           <div class="flex transition-transform duration-500 ease-out"
+                :style="`transform: translateX(-${currentSlide * 100}%);`">
+               {% if recommended_users %}
+                   {% for user in recommended_users %}
+                       <div class="flex-shrink-0" 
+                            :style="`width: calc(100% / ${recsPerSlide});`"
+                            id="recommendation-{{ user['user_id'] }}">
+                           <div class="bg-white p-4 rounded-lg ml-4 shadow-md text-center transition transform hover:scale-105">
+                               <a href="{{ url_for('profile', user_id=user['user_id']) }}">
+                                   <img src="{{ user['profile_image'] }}" alt="Foto de perfil de {{ user['name'] }}" class="w-20 h-20 mx-auto rounded-full border-2 border-blue-500 mb-3">
+                               </a>
+                               <p class="text-gray-800 font-bold">{{ user['name'] }}</p>
+                               {% if user['is_following_back'] %}
+                                   <button onclick="toggleRecommendationFollow({{ user['user_id'] }}, 'Seguir también')" 
+                                           class="mt-2 text-green-500 text-sm hover:text-green-700">Seguir también</button>
+                               {% elif user['is_following'] %}
+                                   <button class="mt-2 text-gray-500 text-sm" disabled>Siguiendo</button>
+                               {% else %}
+                                   <button onclick="toggleRecommendationFollow({{ user['user_id'] }}, 'Seguir')" 
+                                           class="mt-2 text-blue-500 hover:text-blue-700 text-sm">Seguir</button>
+                               {% endif %}
+                           </div>
+                       </div>
+                   {% endfor %}
+               {% else %}
+                   <p class="text-gray-600">No hay recomendaciones disponibles.</p>
+               {% endif %}
+           </div>
+   
+           <!-- Botón derecho -->
+           <button 
+               @click="currentSlide = currentSlide < totalRecSlides - 1 ? currentSlide + 1 : 0"
+               class="absolute top-1/2 right-2 transform -translate-y-1/2 bg-gray-700 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 text-xl z-10 shadow-lg transition-all duration-200">
+               &#10095;
+           </button>
+   
+           <!-- Indicadores (puntos) -->
+           <div class="flex justify-center mt-4 space-x-2">
+               <template x-for="i in totalRecSlides">
+                   <div 
+                       :class="{'bg-blue-500': i - 1 === currentSlide, 'bg-gray-300': i - 1 !== currentSlide}"
+                       class="w-3 h-3 rounded-full cursor-pointer transition-all duration-300"
+                       @click="currentSlide = i - 1"></div>
+               </template>
+           </div>
+       </div>
+   </div>
+   {% endif %}
+   
+
+<div class="flex flex-col md:flex-row gap-6 items-center mb-10">
+    <div class="w-full md:w-auto">
+        <label for="genderFilter" class="block text-sm font-semibold text-gray-600 mb-2">Género</label>
+        <div class="relative group">
+            <select 
+                id="genderFilter" 
+                name="gender" 
+                class="w-full md:w-52 border border-gray-300 rounded-full shadow-lg p-3 text-gray-700 appearance-none transition group-hover:ring-2 group-hover:ring-indigo-400 group-hover:shadow-xl"
+                onchange="handleSelection(this)"
+                onfocus="toggleArrow(this, true)"
+                onblur="resetArrow(this)">
+                <option value="">Todos</option>
+                <!-- Opciones -->
+            </select>
+            <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" id="genderArrow" class="h-5 w-5 text-gray-400 transition-transform transform" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 9.293a1 1 0 011.414 0L10 12.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full md:w-auto">
+        <label for="countryFilter" class="block text-sm font-semibold text-gray-600 mb-2">País</label>
+        <div class="relative group">
+            <select 
+                id="countryFilter" 
+                name="country" 
+                class="w-full md:w-52 border border-gray-300 rounded-full shadow-lg p-3 text-gray-700 appearance-none transition group-hover:ring-2 group-hover:ring-indigo-400 group-hover:shadow-xl"
+                onchange="handleSelection(this)"
+                onfocus="toggleArrow(this, true)"
+                onblur="resetArrow(this)">
+                <option value="">Todos</option>
+                <!-- Opciones -->
+            </select>
+            <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" id="countryArrow" class="h-5 w-5 text-gray-400 transition-transform transform" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 9.293a1 1 0 011.414 0L10 12.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a 1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div>
+    <h2 class="text-xl font-semibold text-blue-600 mb-4 mt-10">
+        {% if is_own_profile %}
+        A estas personas también les gusta ({{ user['interest'] }})
+        {% else %}
+        Usuarios con intereses relacionados ({{ user['interest'] }})
+        {% endif %}
+    </h2>
+    <div id="filteredUsersContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+        {% for similar_user in similar_users %}
+        <div class="bg-white p-6 rounded-lg shadow-lg text-center transition hover:scale-105">
+            <a href="{{ url_for('profile', user_id=similar_user['user_id']) }}">
+                <img src="{{ similar_user['profile_image'] }}" alt="Foto de perfil de {{ similar_user['name'] }}" class="w-16 h-16 mx-auto rounded-full border-2 border-blue-500 mb-3">
+            </a>
+            <p class="text-gray-800 font-bold">{{ similar_user['name'] }}</p>
+
+            {% if similar_user['is_following'] %}
+                <button id="followBtn-{{ similar_user['user_id'] }}" onclick="toggleUnfollow({{ similar_user['user_id'] }}, this)" class="mt-2 text-red-500 hover:text-red-700 text-sm">Dejar de seguir</button>
+            {% else %}
+                <button id="followBtn-{{ similar_user['user_id'] }}" onclick="toggleFollow({{ similar_user['user_id'] }}, this)" class="mt-2 text-blue-500 hover:text-blue-700 text-sm">Seguir</button>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+
+
+<script>
+    function toggleArrow(selectElement, isFocused) {
+        const arrowId = selectElement.id === 'genderFilter' ? 'genderArrow' : 'countryArrow';
+        const arrow = document.getElementById(arrowId);
+        if (arrow) {
+            arrow.classList.toggle('rotate-180', isFocused);
+        }
+    }
+
+    function resetArrow(selectElement) {
+        const arrowId = selectElement.id === 'genderFilter' ? 'genderArrow' : 'countryArrow';
+        const arrow = document.getElementById(arrowId);
+        if (arrow) {
+            arrow.classList.remove('rotate-180');
+        }
+    }
+
+    function handleSelection(selectElement) {
+        resetArrow(selectElement);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const profileUserId = {{ user['user_id'] }};
+
+        fetch(`/get_filter_counts_for_profile/${profileUserId}`)
+            .then((response) => response.json())
+            .then((data) => {
+                const genderSelect = document.getElementById('genderFilter');
+                const countrySelect = document.getElementById('countryFilter');
+
+                genderSelect.innerHTML = '<option value="">Todos</option>';
+                countrySelect.innerHTML = '<option value="">Todos</option>';
+
+                Object.entries(data.gender_counts).forEach(([gender, count]) => {
+                    const option = document.createElement('option');
+                    option.value = gender;
+                    option.textContent = `${gender} (${count})`;
+                    genderSelect.appendChild(option);
+                });
+
+                Object.entries(data.country_counts).forEach(([country, count]) => {
+                    const option = document.createElement('option');
+                    option.value = country;
+                    option.textContent = `${country} (${count})`;
+                    countrySelect.appendChild(option);
+                });
+            })
+            .catch((error) => {
+                console.error('Error al cargar los contadores:', error);
+            });
+    });
+
+    function applyFilters() {
+        const gender = document.getElementById('genderFilter').value;
+        const country = document.getElementById('countryFilter').value;
+        const profileUserId = {{ user['user_id'] }};
+
+        // Construir la URL con los parámetros seleccionados
+        const url = new URL('/filter_users', window.location.origin);
+        url.searchParams.append('profile_user_id', profileUserId);
+        if (gender) url.searchParams.append('gender', gender);
+        if (country) url.searchParams.append('country', country);
+
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                const container = document.getElementById('filteredUsersContainer');
+                container.innerHTML = '';
+
+                if (data.filtered_users && data.filtered_users.length > 0) {
+                    data.filtered_users.forEach((user) => {
+                        const userCard = `
+                        <div class="bg-white p-6 rounded-lg shadow-lg text-center transition hover:scale-105">
+                            <a href="/profile/${user.user_id}">
+                                <img src="${user.profile_image}" alt="Foto de perfil de ${user.name}" class="w-16 h-16 mx-auto rounded-full border-2 border-blue-500 mb-3">
+                            </a>
+                            <p class="text-gray-800 font-bold">${user.name}</p>
+                            ${
+                                user.is_following
+                                    ? `<button id="followBtn-${user.user_id}" onclick="toggleUnfollow(${user.user_id}, this)" class="mt-2 text-red-500 hover:text-red-700 text-sm">Dejar de seguir</button>`
+                                    : `<button id="followBtn-${user.user_id}" onclick="toggleFollow(${user.user_id}, this)" class="mt-2 text-blue-500 hover:text-blue-700 text-sm">Seguir</button>`
+                            }
+                        </div>`;
+                        container.insertAdjacentHTML('beforeend', userCard);
+                    });
+                } else {
+                    container.innerHTML = '<p class="text-gray-500">No se encontraron usuarios.</p>';
+                }
+            })
+            .catch((error) => {
+                console.error('Error al aplicar los filtros:', error);
+            });
+    }
+
+    document.getElementById('genderFilter').addEventListener('change', applyFilters);
+    document.getElementById('countryFilter').addEventListener('change', applyFilters);
+
+
+    function toggleRecommendationFollow(userId, buttonText = 'Seguir') {
+    fetch(`/follow/${userId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const recommendationContainer = document.getElementById(`recommendation-${userId}`);
+            if (recommendationContainer) {
+                recommendationContainer.style.display = 'none'; // Ocultar usuario
+            }
+            incrementFollowingCount();
+        } else {
+            alert(data.error || 'Ocurrió un error');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+  
+    function toggleFollow(userId, button) {
+        fetch(`/follow/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+             
+                button.textContent = 'Dejar de seguir';
+                button.classList.remove('text-blue-500', 'hover:text-blue-700');
+                button.classList.add('text-red-500', 'hover:text-red-700');
+                button.setAttribute('onclick', `toggleUnfollow(${userId}, this)`);
+
+                incrementFollowingCount();
+
+                syncFollowStatus(userId, true);
+            } else {
+                alert(data.error || 'Ocurrió un error');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function toggleUnfollow(userId, button) {
+        fetch(`/unfollow/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+
+                button.textContent = 'Seguir';
+                button.classList.remove('text-red-500', 'hover:text-red-700');
+                button.classList.add('text-blue-500', 'hover:text-blue-700');
+                button.setAttribute('onclick', `toggleFollow(${userId}, this)`);
+
+                decrementFollowingCount();
+
+                syncFollowStatus(userId, false);
+            } else {
+                alert(data.error || 'Ocurrió un error');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+  document.addEventListener('DOMContentLoaded', () => {
+        const userId = {{ user['user_id'] }};
+        fetch(`/get_second_interest/${userId}`)
+            .then(response => response.json())
+            .then(data => {
+                const secondInterestElement = document.getElementById('secondInterest');
+                if (data.success) {
+                    secondInterestElement.textContent = `Segundo interés: ${data.second_interest}`;
+                } else {
+                    secondInterestElement.textContent = "Segundo interés no disponible";
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching second interest:', error);
+                const secondInterestElement = document.getElementById('secondInterest');
+                secondInterestElement.textContent = "Error al obtener el segundo interés";
+            });
+    });
+    function toggleFollowProfile(userId, button) {
+        fetch(`/follow/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                button.textContent = 'Dejar de seguir';
+                button.classList.remove('border-blue-500');
+                button.classList.add('border-red-500');
+                button.setAttribute('onclick', `toggleUnfollowProfile(${userId}, this)`);
+                
+                incrementFollowerCount();
+
+                syncFollowStatus(userId, true);
+            } else {
+                alert(data.error || 'Ocurrió un error');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function toggleUnfollowProfile(userId, button) {
+        fetch(`/unfollow/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                button.textContent = 'Seguir';
+                button.classList.remove('border-red-500');
+                button.classList.add('border-blue-500');
+                button.setAttribute('onclick', `toggleFollowProfile(${userId}, this)`);
+                
+                decrementFollowerCount();
+
+                syncFollowStatus(userId, false);
+            } else {
+                alert(data.error || 'Ocurrió un error');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function incrementFollowerCount() {
+        const followerCountElement = document.getElementById('followerCount');
+        if (followerCountElement) {
+            followerCountElement.textContent = parseInt(followerCountElement.textContent) + 1;
+        }
+    }
+
+    function decrementFollowerCount() {
+        const followerCountElement = document.getElementById('followerCount');
+        if (followerCountElement) {
+            followerCountElement.textContent = Math.max(parseInt(followerCountElement.textContent) - 1, 0);
+        }
+    }
+
+    function incrementFollowingCount() {
+        const followingCountElement = document.getElementById('followingCount');
+        if (followingCountElement) {
+            followingCountElement.textContent = parseInt(followingCountElement.textContent) + 1;
+        }
+    }
+
+    function decrementFollowingCount() {
+        const followingCountElement = document.getElementById('followingCount');
+        if (followingCountElement) {
+            followingCountElement.textContent = Math.max(parseInt(followingCountElement.textContent) - 1, 0);
+        }
+    }
+
+    function syncFollowStatus(userId, isFollowing) {
+        updateInterestSectionFollowButton(userId, isFollowing);
+        updateRecommendationSectionFollowButton(userId, !isFollowing);
+        updateProfileFollowButton(userId, isFollowing);
+    }
+
+
+    function updateInterestSectionFollowButton(userId, isFollowing) {
+        const button = document.getElementById(`followBtn-${userId}`);
+        if (button) {
+            if (isFollowing) {
+                button.textContent = 'Dejar de seguir';
+                button.classList.remove('text-blue-500', 'hover:text-blue-700');
+                button.classList.add('text-red-500', 'hover:text-red-700');
+                button.setAttribute('onclick', `toggleUnfollow(${userId}, this)`);
+            } else {
+                button.textContent = 'Seguir';
+                button.classList.remove('text-red-500', 'hover:text-red-700');
+                button.classList.add('text-blue-500', 'hover:text-blue-700');
+                button.setAttribute('onclick', `toggleFollow(${userId}, this)`);
+            }
+        }
+    }
+
+    function updateRecommendationSectionFollowButton(userId, showFollowButton) {
+        const recommendationContainer = document.getElementById(`recommendation-${userId}`);
+        if (recommendationContainer) {
+            recommendationContainer.style.display = showFollowButton ? 'block' : 'none';
+        }
+    }
+
+    function updateProfileFollowButton(userId, isFollowing) {
+        const button = document.querySelector(`#main-content button[onclick*='toggleFollowProfile(${userId}'], 
+                                            #main-content button[onclick*='toggleUnfollowProfile(${userId}']`);
+        if (button) {
+            if (isFollowing) {
+                button.textContent = 'Dejar de seguir';
+                button.classList.remove('border-blue-500');
+                button.classList.add('border-red-500');
+                button.setAttribute('onclick', `toggleUnfollowProfile(${userId}, this)`);
+            } else {
+                button.textContent = 'Seguir';
+                button.classList.remove('border-red-500');
+                button.classList.add('border-blue-500');
+                button.setAttribute('onclick', `toggleFollowProfile(${userId}, this)`);
+            }
+        }
+    }
+
+
+
+
+          function openModal(type) {
+        const userId = "{{ user['user_id'] }}";
+        const url = type === 'followers' ? `/followers/${userId}` : `/following/${userId}`;
+        const modal = document.getElementById('modalOverlay');
+
+        fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('modalContent').innerHTML = html;
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            })
+            .catch(error => {
+                console.error('Error al cargar el contenido del modal:', error);
+                document.getElementById('modalContent').innerHTML = 'Error al cargar el contenido';
+            });
+    }
+
+    function closeModal(event) {
+        const modal = document.getElementById('modalOverlay');
+        if (event.target === modal || event.target.tagName === 'SPAN') {
+            modal.classList.add('hidden');
+            document.getElementById('modalContent').innerHTML = '';
+            document.body.style.overflow = '';
+        }
+    }
+    function updateRecommendations() {
+    fetch('/get_recommendations')
+        .then(response => response.json())
+        .then(data => {
+            const recommendationsContainer = document.getElementById('recommendations');
+            recommendationsContainer.innerHTML = ''; // Limpiar la lista actual
+
+            data.recommendations.forEach(user => {
+                const userCard = `
+                    <div id="recommendation-${user.user_id}" class="bg-white p-4 rounded-lg shadow-md text-center transition hover:scale-105">
+                        <a href="/profile/${user.user_id}">
+                            <img src="${user.profile_image}" alt="Foto de perfil de ${user.name}" class="w-20 h-20 mx-auto rounded-full border-2 border-blue-500 mb-3">
+                        </a>
+                        <p class="text-gray-800 font-bold">${user.name}</p>
+                        <button onclick="toggleRecommendationFollow(${user.user_id}, 'Seguir')" class="mt-2 text-blue-500 hover:text-blue-700 text-sm">Seguir</button>
+                    </div>
+                `;
+                recommendationsContainer.insertAdjacentHTML('beforeend', userCard);
+            });
+        })
+        .catch(error => console.error('Error al actualizar recomendaciones:', error));
+}
+
+    function deletePost(postId) {
+         if (!confirm('¿Estás seguro de que deseas eliminar esta publicación?')) return;
+    
+         document.getElementById('loader').style.display = 'block';
+    
+         fetch(`/delete_post/${postId}`, {
+             method: 'POST'
+         })
+         .then(response => {
+             if (response.ok) {
+                 window.location.reload();
+             } else {
+                 alert('Error al eliminar la publicación.');
+             }
+         })
+         .catch(error => console.error('Error:', error))
+         .finally(() => document.getElementById('loader').style.display = 'none');
+     }
+    
+     document.querySelectorAll('.card').forEach(card => {
+         const observer = new IntersectionObserver(entries => {
+             entries.forEach(entry => entry.isIntersecting && entry.target.classList.add('card-visible'));
+         }, { threshold: 0.05 });
+         observer.observe(card);
+     });
+     </script>
+     
+</body>
+</html>
