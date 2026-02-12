@@ -1,0 +1,28 @@
+# No subir archivos sensibles
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+ENV/
+*.db
+*.sqlite3
+
+# Archivos de desarrollo
+.vscode/
+.idea/
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Almacenamiento local (se debe usar S3 o Cloudinary en producción)
+Connectly/storage/*.png
+Connectly/storage/*.jpg
+Connectly/storage/*.jpeg
+Connectly/storage/*.html
+!Connectly/storage/.gitkeep

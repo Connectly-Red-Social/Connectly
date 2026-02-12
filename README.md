@@ -1,6 +1,7 @@
 # 🌐 Connectly - Red Social con Algoritmos de Grafos
 
 ## 📋 Índice
+- [🚀 Despliegue en Render](#-despliegue-en-render)
 - [Descripción General](#-descripción-general)
 - [Arquitectura y Tecnologías](#️-arquitectura-y-tecnologías)
 - [Características Principales](#-características-principales)
@@ -10,6 +11,98 @@
 - [Base de Datos](#️-base-de-datos)
 - [Funcionalidades Detalladas](#-funcionalidades-detalladas)
 - [Cómo Mejorar el Proyecto](#-cómo-mejorar-el-proyecto)
+
+---
+
+## 🚀 Despliegue en Render
+
+### Paso 1: Preparar Base de Datos MySQL en la Nube
+
+**Opción A: Railway (Recomendado - Gratis)**
+1. Ve a [Railway.app](https://railway.app/) y crea una cuenta
+2. New Project → Add MySQL
+3. En la pestaña "Connect", copia la **MySQL Connection URL**
+4. **Importante:** Convierte el formato de `mysql://user:pass@host:port/dbname` a `mysql+mysqlconnector://user:pass@host:port/dbname`
+
+**Opción B: PlanetScale (Gratis)**
+1. Ve a [PlanetScale.com](https://planetscale.com/)
+2. Crea una nueva base de datos
+3. Obtén la connection string en formato MySQL
+
+### Paso 2: Crear las Tablas en la Base de Datos Remota
+
+Primero, actualiza temporalmente los scripts con tu URL de base de datos remota y ejecútalos:
+
+```bash
+# En tu computadora local, conecta a la BD remota
+python Connectly/create_posts_table.py
+python Connectly/create_post_likes_table.py
+python Connectly/create_comments_table.py
+python Connectly/create_user_follows_table.py
+python Connectly/create_messages_table.py
+python Connectly/generate_user_profiles.py
+```
+
+### Paso 3: Subir a GitHub
+
+```bash
+git add .
+git commit -m "Preparado para despliegue en Render"
+git push origin main
+```
+
+### Paso 4: Desplegar en Render
+
+1. Ve a [Render.com](https://render.com/) y crea una cuenta
+2. Click en **"New +"** → **"Web Service"**
+3. Conecta tu repositorio de GitHub
+4. Configuración del servicio:
+   - **Name:** `connectly` (o el que prefieras)
+   - **Runtime:** `Python 3`
+   - **Build Command:** 
+     ```
+     pip install -r Connectly/requirements.txt
+     ```
+   - **Start Command:** 
+     ```
+     cd Connectly && gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app
+     ```
+   
+5. **Variables de Entorno** (Environment Variables):
+   - Click en "Advanced" → "Add Environment Variable"
+   - Agrega estas variables:
+     - `DATABASE_URL`: Tu connection string completa (el de Railway/PlanetScale con formato `mysql+mysqlconnector://...`)
+     - `SECRET_KEY`: Genera una clave segura [aquí](https://randomkeygen.com/)
+     - `PYTHON_VERSION`: `3.11.0`
+
+6. Click en **"Create Web Service"**
+7. Espera 5-10 minutos mientras Render hace el despliegue
+
+### Paso 5: Probar tu Aplicación
+
+- Tu app estará disponible en: `https://connectly.onrender.com` (o el nombre que elegiste)
+- **Nota:** En el plan gratuito, la app se dormirá después de 15 minutos de inactividad
+- El primer acceso después de dormir tomará ~30-60 segundos
+
+### ⚠️ Consideraciones del Plan Gratuito
+
+**Limitaciones:**
+- ❄️ **Hibernación:** La app se duerme tras 15 min sin tráfico
+- ⏱️ **Wake-up time:** 30-60 segundos para el primer acceso
+- 💾 **Almacenamiento temporal:** Las imágenes subidas se borran al reiniciar
+
+**Soluciones:**
+- Para imágenes permanentes, integra [Cloudinary](https://cloudinary.com/) (tiene plan gratuito)
+- Para evitar hibernación, actualiza a Render paid plan ($7/mes)
+
+### 🔄 Actualizar la Aplicación
+
+Cada vez que hagas push a GitHub, Render desplegará automáticamente:
+```bash
+git add .
+git commit -m "Nuevas funcionalidades"
+git push origin main
+```
 
 ---
 

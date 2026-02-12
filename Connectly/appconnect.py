@@ -1,11 +1,17 @@
 import pandas as pd
+import os
 from sqlalchemy import create_engine
+from dotenv import load_dotenv
 
-## Cargar el dataset
-df = pd.read_csv('data/SocialMediaUsersDataset.csv').head(1500) 
+# Cargar variables de entorno
+load_dotenv()
+
+## Cargar el dataset (ajustar path para estar en el directorio correcto)
+csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'SocialMediaUsersDataset.csv')
+df = pd.read_csv(csv_path).head(1500) 
 
 ## Conexión a la base de datos
-db_url = 'mysql+mysqlconnector://root:Nicolas20@localhost:3306/connectly' 
+db_url = os.getenv('DATABASE_URL', 'mysql+mysqlconnector://root:Nicolas20@localhost:3306/connectly')
 engine = create_engine(db_url)
 
 ## Insertar el dataset en la base de datos

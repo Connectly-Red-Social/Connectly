@@ -1,10 +1,15 @@
 # create_columns.py
 import sys
+import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import ProgrammingError
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 # Configuración de conexión (ajusta usuario/contraseña si es necesario)
-DB_URL = 'mysql+mysqlconnector://root:Nicolas20@localhost:3306/connectly'
+DB_URL = os.getenv('DATABASE_URL', 'mysql+mysqlconnector://root:Nicolas20@localhost:3306/connectly')
 
 
 def main():

@@ -8,17 +8,21 @@ from sqlalchemy.orm import sessionmaker
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from datetime import datetime
 from community_connection.script.community_data import CommunityData
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 ## Crear la aplicación Flask
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'
+app.secret_key = os.getenv('SECRET_KEY', 'supersecretkey')
 CORS(app, supports_credentials=True)
 
 # configuración de Flask-SocketIO para el manejo de mensajes en tiempo real entre seguidores
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Conexión a la base de datos y creación de instancias de CommunityData
-db_url = 'mysql+mysqlconnector://root:Nicolas20@localhost:3306/connectly'
+db_url = os.getenv('DATABASE_URL', 'mysql+mysqlconnector://root:Nicolas20@localhost:3306/connectly')
 community_data_instance = CommunityData(db_url)
 engine = create_engine(db_url)
 SessionLocal = sessionmaker(bind=engine)
