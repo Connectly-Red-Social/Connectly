@@ -152,6 +152,34 @@ class CommunityData:
    
        net = Network(height="740px", width="100%", bgcolor="#222222", font_color="white")
        net.barnes_hut()
+
+       # Copiar archivos JS necesarios para que funcionen las rutas relativas
+       import shutil
+       from pathlib import Path
+       
+       storage_dir = Path(file_path).parent
+       lib_dir = Path(__file__).parent.parent.parent.parent / 'lib'
+       
+       # Crear directorios necesarios
+       lib_storage = storage_dir / 'lib'
+       bindings_storage = lib_storage / 'bindings'
+       vis_storage = lib_storage / 'vis-9.1.2'
+       
+       os.makedirs(bindings_storage, exist_ok=True)
+       os.makedirs(vis_storage, exist_ok=True)
+       
+       # Copiar archivos necesarios
+       try:
+           utils_src = lib_dir / 'bindings' / 'utils.js'
+           if utils_src.exists():
+               shutil.copy2(utils_src, bindings_storage / 'utils.js')
+           
+           for file_name in ['vis-network.min.js', 'vis-network.css']:
+               vis_src = lib_dir / 'vis-9.1.2' / file_name
+               if vis_src.exists():
+                   shutil.copy2(vis_src, vis_storage / file_name)
+       except Exception as e:
+           print(f"Warning: Could not copy JS files: {e}")
    
        # diseño y opciones para poder visualizar mejor el grafo 
        net.set_options("""
