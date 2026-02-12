@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-db_url = os.getenv('DATABASE_URL', 'mysql+mysqlconnector://root:Nicolas20@localhost:3306/connectly')
+db_url = os.getenv('DATABASE_URL', 'mysql+mysqlconnector://root:smaSwtowYMBPIhjBknUlhBkGTAPJFSsn@shortline.proxy.rlwy.net:27854/railway')
 engine = create_engine(db_url)
 
 print("Agregando clave primaria a social_media_users...")

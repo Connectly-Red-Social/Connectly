@@ -22,7 +22,7 @@ CORS(app, supports_credentials=True)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Conexión a la base de datos y creación de instancias de CommunityData
-db_url = os.getenv('DATABASE_URL', 'mysql+mysqlconnector://root:Nicolas20@localhost:3306/connectly')
+db_url = os.getenv('DATABASE_URL', 'mysql+mysqlconnector://root:smaSwtowYMBPIhjBknUlhBkGTAPJFSsn@shortline.proxy.rlwy.net:27854/railway')
 community_data_instance = CommunityData(db_url)
 engine = create_engine(db_url)
 SessionLocal = sessionmaker(bind=engine)

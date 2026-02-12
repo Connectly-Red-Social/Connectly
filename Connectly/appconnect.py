@@ -11,7 +11,7 @@ csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'Soc
 df = pd.read_csv(csv_path).head(1500) 
 
 ## Conexión a la base de datos
-db_url = os.getenv('DATABASE_URL', 'mysql+mysqlconnector://root:Nicolas20@localhost:3306/connectly')
+db_url = os.getenv('DATABASE_URL', 'mysql+mysqlconnector://root:smaSwtowYMBPIhjBknUlhBkGTAPJFSsn@shortline.proxy.rlwy.net:27854/railway')
 engine = create_engine(db_url)
 
 ## Insertar el dataset en la base de datos

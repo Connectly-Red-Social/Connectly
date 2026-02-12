@@ -45,6 +45,10 @@ for script in scripts:
             "DB_URL = 'mysql+mysqlconnector://root:Nicolas20@localhost:3306/connectly'",
             f"DB_URL = '{db_url}'"
         )
+        code = code.replace(
+            "DB_URL = 'mysql+mysqlconnector://root:smaSwtowYMBPIhjBknUlhBkGTAPJFSsn@shortline.proxy.rlwy.net:27854/railway'",
+            f"DB_URL = '{db_url}'"
+        )
         
         # Ejecutar el script
         exec(code)

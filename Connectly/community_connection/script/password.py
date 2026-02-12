@@ -1,11 +1,16 @@
 ## Script para generar usernames, contraseñas e imágenes de perfil para los primeros 1500 usuarios de la tabla social_media_users
 import pandas as pd
+import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 import random
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 ## Conexión a la base de datos
-db_url = 'mysql+mysqlconnector://root:Nicolas20@localhost:3306/connectly'
+db_url = os.getenv('DATABASE_URL', 'mysql+mysqlconnector://root:smaSwtowYMBPIhjBknUlhBkGTAPJFSsn@shortline.proxy.rlwy.net:27854/railway')
 engine = create_engine(db_url)
 Session = sessionmaker(bind=engine)
 
