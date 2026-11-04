@@ -1,3 +1,55 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---------- Base ---------- */
+[x-cloak] { display: none !important; }
+body.modal-open { overflow: hidden; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.bg-login {
+    background-image: url("/static/images/login.png");
+    background-size: cover;
+    background-position: center;
+}
+
+/* ---------- Tarjetas y publicaciones ---------- */
+.card { transition: box-shadow 0.3s ease, transform 0.3s ease; }
+.card:hover { box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2); transform: translateY(-1px); }
+.post-content { overflow-wrap: anywhere; word-break: break-word; white-space: pre-line; }
+.interest-tag {
+    background-color: #2563EB; color: white; font-size: 0.75rem; font-weight: 600;
+    border-radius: 9999px; padding: 2px 8px; white-space: nowrap;
+}
+
+/* ---------- Modales (comentarios e imágenes) ---------- */
+.modal-backdrop {
+    position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.7); padding: 1rem;
+}
+.modal-backdrop.is-open { display: flex; }
+.modal-panel { animation: fadeInModal 0.25s ease; }
+@keyframes fadeInModal { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+.comment-item p { overflow-wrap: anywhere; word-break: break-word; }
+
+/* ---------- Botón seguir / dejar de seguir (el estado lo marca data-following) ---------- */
+.follow-btn { @apply text-sm font-semibold rounded-lg px-4 py-2 border-2 transition duration-200 disabled:opacity-60 disabled:cursor-wait; }
+.follow-btn[data-following="false"] { @apply bg-blue-500 border-blue-500 text-white hover:bg-blue-600 hover:border-blue-600; }
+.follow-btn[data-following="true"]  { @apply bg-white border-gray-300 text-gray-700 hover:border-red-400 hover:text-red-600; }
+.follow-btn.follow-link { @apply bg-transparent border-transparent px-2 py-1; }
+.follow-btn.follow-link[data-following="false"] { @apply text-blue-500 hover:text-blue-700 hover:bg-transparent; }
+.follow-btn.follow-link[data-following="true"]  { @apply text-red-500 hover:text-red-700 border-transparent; }
+
+/* ---------- Avisos (toasts) ---------- */
+.toast { @apply pointer-events-auto flex items-start gap-3 rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg; animation: toastIn 0.25s ease; }
+.toast-success { @apply bg-teal-600; }
+.toast-error { @apply bg-red-500; }
+.toast-info { @apply bg-blue-600; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---------- Formularios ---------- */
+.field { @apply w-full mt-1 px-4 py-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent; }
+.field-label { @apply block text-sm font-semibold text-gray-600; }
+.btn-primary { @apply inline-flex items-center justify-center py-3 px-6 bg-gradient-to-r from-blue-500 to-teal-500 text-white font-bold rounded-lg transition duration-300 hover:from-teal-500 hover:to-blue-500 disabled:opacity-60; }
+.btn-secondary { @apply inline-flex items-center justify-center py-2 px-4 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg transition duration-200 hover:bg-gray-50; }
+.btn-danger { @apply inline-flex items-center justify-center py-2 px-4 bg-red-500 text-white font-semibold rounded-lg transition duration-200 hover:bg-red-600; }

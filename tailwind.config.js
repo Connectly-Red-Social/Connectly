@@ -2,7 +2,7 @@
 module.exports = {
   content: [
     "./Connectly/templates/**/*.html",  
-    "./Connectly/static/**/*.css"      
+    "./Connectly/static/js/**/*.js"
   ],
   theme: {
     extend: {},

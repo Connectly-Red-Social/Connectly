@@ -1,36 +1,42 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Search Results</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='output.css') }}">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;800&display=swap"
-  rel="stylesheet">
-</head>
-<body class="bg-gray-100 font-[Poppins]">
-    
-    <div class="lg:w-[300px] fixed lg:relative inset-y-0 z-40 bg-gray-900">
-        {% include 'sidebar.html' %}
-    </div>  
-    <div class="lg:ml-[300px] p-8 mt-16 lg:mt-0 transition-all duration-300 ease-in-out" id="main-content">
-    
-    <h1 class="text-2xl font-bold mb-4">Search Results for "{{ term }}"</h1>
-    
+{% extends 'base.html' %}
+{% from 'macros.html' import follow_button, avatar %}
+{% block title %}Buscar{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 mb-1">
+        {% if term %}Resultados para "{{ term }}"{% else %}Buscar personas{% endif %}
+    </h1>
+    <p class="text-gray-500 mb-6">Busca por nombre, usuario o interés.</p>
+
     {% if results %}
+    <p class="text-sm text-gray-500 mb-3">{{ results|length }} resultado{{ '' if results|length == 1 else 's' }}</p>
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {% for user in results %}
-      <div class="p-4 bg-white rounded shadow hover:shadow-lg">
-        <img src="{{ user.profile_image }}" alt="{{ user.name }}" class="w-16 h-16 rounded-full mx-auto">
-        <h2 class="text-lg font-bold mt-2 text-center">{{ user.name }}</h2>
-        <p class="text-sm text-center text-gray-600">{{ user.interest }}</p>
-        <a href="{{ url_for('profile', user_id=user.user_id) }}" class="block mt-4 text-blue-500 text-center">View Profile</a>
-      </div>
-      {% endfor %}
+        {% for user in results %}
+        <div class="p-5 bg-white rounded-lg shadow hover:shadow-lg transition text-center card">
+            <a href="{{ url_for('profile', user_id=user.user_id) }}">
+                {{ avatar(user.profile_image, user.name, 'w-16 h-16 mx-auto', 'border-2 border-blue-500') }}
+            </a>
+            <a href="{{ url_for('profile', user_id=user.user_id) }}" class="block text-lg font-bold mt-2 text-gray-800 hover:underline truncate">{{ user.name }}</a>
+            {% if user.username %}<p class="text-xs text-gray-400">@{{ user.username }}</p>{% endif %}
+            {% if user.interest %}<span class="interest-tag inline-block mt-2">{{ user.interest }}</span>{% endif %}
+            <div class="mt-4 flex justify-center gap-2">
+                <a href="{{ url_for('profile', user_id=user.user_id) }}" class="btn-secondary !py-2">Ver perfil</a>
+                {{ follow_button(user.user_id, user.is_following) }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% elif term %}
+    <div class="bg-white rounded-lg shadow-md p-10 text-center">
+        <i class="bi bi-search text-5xl text-gray-300"></i>
+        <p class="text-gray-600 mt-3">No encontramos personas para "{{ term }}".</p>
+        <p class="text-gray-500 text-sm mt-1">Prueba con otro nombre o con un interés como "Music" o "Travel".</p>
     </div>
     {% else %}
-    <p class="text-gray-500">No results found for your search.</p>
+    <div class="bg-white rounded-lg shadow-md p-10 text-center">
+        <i class="bi bi-people text-5xl text-gray-300"></i>
+        <p class="text-gray-600 mt-3">Escribe en el buscador de la izquierda para encontrar personas.</p>
+    </div>
     {% endif %}
-  </div>
-</body>
-</html>
+</div>
+{% endblock %}

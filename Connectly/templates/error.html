@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="flex items-center justify-center min-h-[70vh]">
+    <div class="bg-white rounded-xl shadow-lg p-10 max-w-md w-full text-center border-t-4 border-blue-500">
+        <p class="text-6xl font-extrabold bg-gradient-to-r from-blue-500 to-teal-500 text-transparent bg-clip-text">{{ code }}</p>
+        <h1 class="text-2xl font-bold text-gray-800 mt-3">{{ title }}</h1>
+        <p class="text-gray-500 mt-2">{{ message }}</p>
+        <div class="mt-6 flex justify-center gap-3">
+            <a href="javascript:history.back()" class="btn-secondary">Volver</a>
+            <a href="{{ url_for('home') }}" class="btn-primary !py-2">Ir al inicio</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

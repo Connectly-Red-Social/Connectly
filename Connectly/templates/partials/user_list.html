@@ -1,0 +1,22 @@
+{# Lista de personas (seguidores / seguidos). Se usa como página completa y dentro del modal del perfil. #}
+{% from 'macros.html' import follow_button, avatar %}
+<h2 class="text-2xl font-semibold text-gray-800 mb-4">{{ title }} <span class="text-gray-400 text-lg font-normal">· {{ users|length }}</span></h2>
+{% if users %}
+<div class="space-y-4">
+    {% for u in users %}
+    <div class="flex flex-col md:flex-row items-center justify-between bg-gray-100 p-4 rounded-lg shadow-sm hover:shadow-md transition duration-150 border border-gray-200">
+        <div class="flex items-center space-x-4 mb-4 md:mb-0 min-w-0">
+            <a href="{{ url_for('profile', user_id=u.user_id) }}">{{ avatar(u.profile_image, 'Foto de ' ~ u.name, 'w-12 h-12', 'border border-gray-300') }}</a>
+            <a href="{{ url_for('profile', user_id=u.user_id) }}" class="text-gray-800 font-semibold text-lg truncate hover:underline">{{ u.name }}</a>
+        </div>
+        {% if u.user_id != me %}
+            {{ follow_button(u.user_id, u.is_following, '', u.get('follows_me', False), 'w-full md:w-auto') }}
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-gray-500">
+    {% if mode == 'followers' %}Todavía no hay seguidores.{% else %}Todavía no sigue a nadie.{% endif %}
+</p>
+{% endif %}

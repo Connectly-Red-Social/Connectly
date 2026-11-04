@@ -1,0 +1,46 @@
+{# Modales compartidos por home y perfil: imagen ampliada y comentarios #}
+<div id="imageModal" class="modal-backdrop" role="dialog" aria-label="Imagen ampliada">
+    <div class="relative modal-panel">
+        <button type="button" data-action="close-modal" class="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-white text-gray-800 text-2xl leading-none shadow" aria-label="Cerrar">&times;</button>
+        <img id="modalImage" src="" alt="Imagen de la publicación" class="w-auto h-auto max-w-full max-h-[90vh] object-contain rounded-lg">
+    </div>
+</div>
+
+<div id="commentModal" class="modal-backdrop" role="dialog" aria-label="Comentarios">
+    <div class="modal-panel bg-white w-full max-w-4xl max-h-[92vh] rounded-xl shadow-lg flex flex-col md:flex-row overflow-hidden">
+
+        <div id="postImageWrap" class="hidden md:w-1/2 bg-gray-200 md:min-h-[480px] max-h-56 md:max-h-none flex-shrink-0">
+            <img id="postImage" src="" alt="Imagen de la publicación" class="w-full h-full object-cover">
+        </div>
+
+        <div class="flex flex-col flex-1 min-w-0 p-4 sm:p-6 overflow-hidden">
+            <div class="flex items-start gap-4 border-b pb-4 mb-4">
+                <a id="postProfileLink" href="#"><img id="postProfileImage" src="" data-avatar alt="Avatar del autor" class="w-12 h-12 rounded-full border border-gray-300 object-cover"></a>
+                <div class="min-w-0 flex-1">
+                    <h2 id="postAuthor" class="font-semibold text-lg text-gray-800"></h2>
+                    <p id="postInterest" class="text-blue-600 text-sm font-semibold"></p>
+                    <p id="postContent" class="post-content text-gray-600 text-sm mt-1 line-clamp-3"></p>
+                    <button type="button" id="toggleContentButton" data-action="toggle-modal-content" class="hidden text-blue-500 hover:text-blue-700 mt-1 text-sm">Ver más</button>
+                </div>
+                <button type="button" data-action="close-modal" class="text-gray-400 hover:text-gray-700 text-2xl leading-none" aria-label="Cerrar">&times;</button>
+            </div>
+
+            <div class="flex items-center gap-2 text-gray-500 mb-3">
+                <i id="modalLikeIcon" class="bi bi-heart text-red-500 text-xl mr-1"></i><span id="modalLikeCount">0</span>
+                <h3 class="ml-4 text-lg font-semibold text-gray-800">Comentarios</h3>
+            </div>
+
+            <div id="commentsContainer" class="flex-1 min-h-[160px] overflow-y-auto space-y-4 pr-2 scrollbar-hide"></div>
+
+            <form id="commentForm" class="mt-4 flex items-center gap-3 border-t pt-4">
+                {% if g.user %}<img src="{{ g.user.profile_image }}" data-avatar alt="Tu avatar" class="w-8 h-8 rounded-full bg-gray-300 object-cover">{% endif %}
+                <div class="flex-1 relative">
+                    <input type="text" id="commentInput" name="comment_content" placeholder="Escribe un comentario..." maxlength="500" autocomplete="off"
+                           class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-12" required>
+                    <span id="charCount" class="absolute right-3 top-2 text-gray-400 text-xs">500</span>
+                </div>
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition disabled:opacity-60">Comentar</button>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,50 @@
+{# Tarjetas de publicaciones. Variables: posts, me (id del usuario actual), compact (opcional) #}
+{% from 'macros.html' import avatar %}
+{% for post in posts %}
+<article class="bg-white p-6 rounded-lg shadow-md card flex flex-col"
+         data-post-card data-post-id="{{ post.PostID }}" data-author-id="{{ post.UserID }}"
+         data-author-name="{{ post.Name }}" data-author-image="{{ post.profile_image or url_for('static', filename='images/user1.png') }}"
+         data-interest="{{ post.interest }}" data-image="{{ post.Image or '' }}">
+    <div class="flex items-center mb-4">
+        <a href="{{ url_for('profile', user_id=post.UserID) }}">
+            {{ avatar(post.profile_image, 'Foto de perfil de ' ~ post.Name, 'w-12 h-12', 'border border-gray-300 mr-4') }}
+        </a>
+        <div class="min-w-0">
+            <a href="{{ url_for('profile', user_id=post.UserID) }}" class="font-bold text-lg text-gray-800 hover:underline block truncate">{{ post.Name }}</a>
+            <p class="text-gray-500 text-sm" data-time="{{ post.PostDate|iso_utc }}">{{ post.PostDate.strftime('%Y-%m-%d %H:%M') }}</p>
+            {% if post.interest %}<p class="text-blue-600 text-base font-semibold">{{ post.interest }}</p>{% endif %}
+        </div>
+        <div class="ml-auto pl-3">
+            {% if post.UserID == me %}
+            <button type="button" data-action="delete" class="text-gray-400 hover:text-red-600 text-xl" title="Eliminar publicación" aria-label="Eliminar publicación"><i class="bi bi-trash"></i></button>
+            {% else %}
+            <button type="button" data-action="report-post" class="text-gray-400 hover:text-red-500 text-lg" title="Reportar publicación" aria-label="Reportar publicación"><i class="bi bi-flag"></i></button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mb-4 max-w-full">
+        <p class="post-body post-content text-gray-700 leading-relaxed mb-2 line-clamp-4">{{ post.Content }}</p>
+        <button type="button" data-action="expand" class="hidden text-blue-500 text-sm hover:text-blue-700">Ver más</button>
+    </div>
+
+    {% if post.Image %}
+    <img src="{{ post.Image }}" alt="Imagen de la publicación" loading="lazy"
+         class="w-full {{ 'max-h-60' if compact else 'max-h-80' }} object-cover rounded-lg cursor-pointer mb-4"
+         data-action="image" data-src="{{ post.Image }}">
+    {% endif %}
+
+    <div class="flex items-center space-x-5 mt-auto pt-2">
+        <button type="button" data-action="like" aria-pressed="{{ 'true' if post.is_post_liked else 'false' }}"
+                class="flex items-center text-gray-500 hover:text-red-500 transition-transform hover:scale-110" aria-label="Me gusta">
+            <i class="like-icon bi {{ 'bi-heart-fill' if post.is_post_liked else 'bi-heart' }} text-red-500 text-xl mr-1"></i>
+            <span class="like-count">{{ post.like_count }}</span>
+        </button>
+        <button type="button" data-action="comments" class="flex items-center text-gray-500 hover:text-blue-600">
+            <i class="bi bi-chat-dots text-xl mr-1"></i>
+            <span class="comment-count">{{ post.comment_count }}</span>
+            <span class="ml-1 text-sm hidden sm:inline">Comentarios</span>
+        </button>
+    </div>
+</article>
+{% endfor %}

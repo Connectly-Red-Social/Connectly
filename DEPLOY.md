@@ -6,8 +6,8 @@
 - ✅ `.env.example` - Plantilla de variables de entorno
 - ✅ `.env` - Variables locales (NO subir a Git)
 - ✅ `.gitignore` - Excluye archivos sensibles
-- ✅ `Connectly/init_database.py` - Script para inicializar todas las tablas
-- ✅ `requirements.txt` actualizado con gunicorn y eventlet
+- ✅ `Connectly/services/` - Creación automática de tablas y carga inicial del dataset
+- ✅ `requirements.txt` actualizado con gunicorn y pymysql
 - ✅ `app.py` actualizado para usar variables de entorno
 
 ## 📝 PASOS PARA DESPLEGAR:
@@ -19,26 +19,18 @@
 2. Crea cuenta con GitHub
 3. New Project → Add MySQL
 4. Copia la "MySQL Connection URL"
-5. IMPORTANTE: Cambia "mysql://" por "mysql+mysqlconnector://"
+5. IMPORTANTE: Cambia "mysql://" por "mysql+pymysql://"
    
    Ejemplo:
    De:   mysql://root:abc@mysql.railway.app:3306/railway
-   A:    mysql+mysqlconnector://root:abc@mysql.railway.app:3306/railway
+   A:    mysql+pymysql://root:abc@mysql.railway.app:3306/railway
 ```
 
-### 2️⃣ Crear las Tablas en la Base de Datos Remota
+### 2️⃣ Tablas y datos (automático)
 
-```bash
-# Actualiza tu .env local con la URL de Railway:
-DATABASE_URL=mysql+mysqlconnector://root:pass@host:port/dbname
-
-# Ejecuta el script de inicialización:
-cd Connectly
-python init_database.py
-
-# Genera usuarios de prueba:
-python generate_user_profiles.py
-```
+No hay scripts que ejecutar: al arrancar, la app crea las tablas faltantes y carga el dataset
+(`data/SocialMediaUsersDataset.csv`) si `social_media_users` está vacía. Solo configura `DATABASE_URL`.
+Para desarrollo local, sin `DATABASE_URL` usa `mysql+pymysql://root:Nicolas20@localhost:3306/connectly`.
 
 ### 3️⃣ Subir a GitHub
 
@@ -62,10 +54,10 @@ git push origin main
    pip install -r Connectly/requirements.txt
    
    Start Command:
-   cd Connectly && gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app
+   cd Connectly && gunicorn --worker-class gthread --threads 100 -w 1 --bind 0.0.0.0:$PORT app:app
    
 6. Variables de Entorno (Add Environment Variable):
-   - DATABASE_URL: (tu URL de Railway con mysql+mysqlconnector://)
+   - DATABASE_URL: (tu URL de Railway con mysql+pymysql://)
    - SECRET_KEY: (genera una en https://randomkeygen.com/)
    - PYTHON_VERSION: 3.11.0
 
@@ -102,14 +94,11 @@ git push origin main
 ## 🆘 Solución de Problemas:
 
 **Error: "Table doesn't exist"**
-```bash
-# Ejecuta init_database.py con la URL remota
-python init_database.py
-```
+Revisa los logs de arranque: `bootstrap_database` crea las tablas solo si la conexión funciona.
 
 **Error: "Can't connect to database"**
 - Verifica que DATABASE_URL tenga el formato correcto
-- Debe usar "mysql+mysqlconnector://" no "mysql://"
+- Debe usar "mysql+pymysql://" no "mysql://"
 
 **La app no despierta:**
 - Revisa los logs en Render Dashboard

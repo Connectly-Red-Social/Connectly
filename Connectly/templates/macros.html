@@ -1,0 +1,8 @@
+{# Componentes reutilizables #}
+{% macro follow_button(user_id, following, variant='', follows_me=False, extra='') -%}
+<button type="button" class="follow-btn {{ variant }} {{ extra }}" data-user-id="{{ user_id }}" data-following="{{ 'true' if following else 'false' }}" data-follows-me="{{ 'true' if follows_me else 'false' }}">{{ 'Dejar de seguir' if following else ('Seguir también' if follows_me else 'Seguir') }}</button>
+{%- endmacro %}
+
+{% macro avatar(src, alt, size='w-12 h-12', extra='') -%}
+<img src="{{ src or url_for('static', filename='images/user1.png') }}" alt="{{ alt }}" data-avatar class="{{ size }} rounded-full object-cover {{ extra }}">
+{%- endmacro %}

@@ -18,11 +18,19 @@
         </div>
             <iframe 
                 src="{{ graph_file }}" 
+                title="Grafo de intereses"
                 width="100%" 
                 height="750px" 
+                class="rounded-lg bg-gray-800"
               >
             </iframe>
       
+        <form method="GET" class="mt-6 flex flex-wrap items-center justify-center gap-3 text-gray-300">
+            <label for="limit">Usuarios a mostrar:</label>
+            <select id="limit" name="limit" class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white" onchange="this.form.submit()">
+                {% for n in [100, 300, 600, 1000, 1500] %}<option value="{{ n }}" {{ 'selected' if n == limit }}>{{ n }}</option>{% endfor %}
+            </select>
+        </form>
         <div class="mt-6 text-center">
             <a href="{{ url_for('admin_dashboard') }}" 
                class="inline-block  bg-gradient-to-r from-blue-500 to-teal-500 text-white px-6 py-2 rounded-lg font-semibold shadow-md hover:from-blue-600 hover:to-purple-700 hover:shadow-lg transition">

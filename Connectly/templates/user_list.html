@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} de {{ owner.name }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <a href="{{ url_for('profile', user_id=owner.user_id) }}" class="text-blue-500 hover:underline text-sm"><i class="bi bi-arrow-left"></i> Volver al perfil de {{ owner.name }}</a>
+    <div class="bg-white shadow-md rounded-lg p-6 mt-3">
+        {% include 'partials/user_list.html' %}
+    </div>
+</div>
+{% endblock %}

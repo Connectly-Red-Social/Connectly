@@ -22,26 +22,16 @@
 1. Ve a [Railway.app](https://railway.app/) y crea una cuenta
 2. New Project → Add MySQL
 3. En la pestaña "Connect", copia la **MySQL Connection URL**
-4. **Importante:** Convierte el formato de `mysql://user:pass@host:port/dbname` a `mysql+mysqlconnector://user:pass@host:port/dbname`
+4. **Importante:** Convierte el formato de `mysql://user:pass@host:port/dbname` a `mysql+pymysql://user:pass@host:port/dbname`
 
 **Opción B: PlanetScale (Gratis)**
 1. Ve a [PlanetScale.com](https://planetscale.com/)
 2. Crea una nueva base de datos
 3. Obtén la connection string en formato MySQL
 
-### Paso 2: Crear las Tablas en la Base de Datos Remota
+### Paso 2: Tablas y datos (automático)
 
-Primero, actualiza temporalmente los scripts con tu URL de base de datos remota y ejecútalos:
-
-```bash
-# En tu computadora local, conecta a la BD remota
-python Connectly/create_posts_table.py
-python Connectly/create_post_likes_table.py
-python Connectly/create_comments_table.py
-python Connectly/create_user_follows_table.py
-python Connectly/create_messages_table.py
-python Connectly/generate_user_profiles.py
-```
+No hay que ejecutar scripts. Al arrancar, la app crea las tablas que falten y, si `social_media_users` está vacía, carga `data/SocialMediaUsersDataset.csv` (1500 usuarios). Solo define `DATABASE_URL` en Render.
 
 ### Paso 3: Subir a GitHub
 
@@ -65,13 +55,13 @@ git push origin main
      ```
    - **Start Command:** 
      ```
-     cd Connectly && gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app
+     cd Connectly && gunicorn --worker-class gthread --threads 100 -w 1 --bind 0.0.0.0:$PORT app:app
      ```
    
 5. **Variables de Entorno** (Environment Variables):
    - Click en "Advanced" → "Add Environment Variable"
    - Agrega estas variables:
-     - `DATABASE_URL`: Tu connection string completa (el de Railway/PlanetScale con formato `mysql+mysqlconnector://...`)
+     - `DATABASE_URL`: Tu connection string completa (el de Railway/PlanetScale con formato `mysql+pymysql://...`)
      - `SECRET_KEY`: Genera una clave segura [aquí](https://randomkeygen.com/)
      - `PYTHON_VERSION`: `3.11.0`
 
@@ -258,14 +248,13 @@ Extrae y compara el segundo interés de los usuarios para recomendaciones más r
 complejidad_Connectly/
 ├── Connectly/                          # Aplicación principal
 │   ├── app.py                          # 🔴 NÚCLEO: Aplicación Flask, rutas, SocketIO
-│   ├── appconnect.py                   # Script auxiliar para insertar datos
+│   ├── services/                       # Modelos, esquema, seeding y registro
 │   ├── graph.py                        # 📊 Implementación standalone del algoritmo de Kosaraju
 │   ├── requirements.txt                # Dependencias de Python
 │   │
 │   ├── community_connection/           # Módulo de lógica de negocios
 │   │   └── script/
-│   │       ├── community_data.py       # 🧠 CLASE PRINCIPAL: Lógica de grafos y BD
-│   │       └── password.py             # Utilidades de contraseñas
+│   │       └── community_data.py       # 🧠 CLASE PRINCIPAL: Lógica de grafos y BD
 │   │
 │   ├── static/                         # Recursos estáticos
 │   │   ├── input.css                   # CSS fuente de Tailwind
@@ -291,10 +280,6 @@ complejidad_Connectly/
 │   │   ├── admin_graph.html            # Visualización de grafos (admin)
 │   │   └── view_all_users.html         # Lista completa de usuarios
 │   │
-│   ├── create_posts_table.py           # 🔧 Script: Crear tabla posts
-│   ├── create_messages_table.py        # 🔧 Script: Crear tabla messages
-│   ├── create_user_follows_table.py    # 🔧 Script: Crear tabla user_follows
-│   └── generate_user_profiles.py       # 🔧 Script: Agregar columnas perfil
 │
 ├── data/
 │   └── SocialMediaUsersDataset.csv     # 📊 Dataset de usuarios (1500 registros)
@@ -315,6 +300,41 @@ complejidad_Connectly/
 ```
 
 ---
+
+## 🧱 Arquitectura por Bounded Contexts
+
+Un solo despliegue Flask y una sola base MySQL, pero el código está separado por contexto. Cada contexto
+tiene sus tablas (`models.py`) y su lógica (`service.py`); entre contextos solo se comparte el `user_id`.
+
+```
+Connectly/
+├── app.py                     # Composición: crea la app, arranca la BD y registra rutas
+├── shared/                    # Infraestructura común
+│   ├── db.py                  #   engine (PyMySQL, pool_pre_ping, DATABASE_URL o respaldo local)
+│   ├── metadata.py            #   MetaData único
+│   ├── schema.py              #   create_all + columnas/FK faltantes + vista de compatibilidad
+│   ├── seed.py                #   carga del dataset (solo si no hay perfiles)
+│   ├── legacy_migration.py    #   migra bases con el esquema antiguo (social_media_users)
+│   └── bootstrap.py           #   orquesta todo al arrancar (con lock para varios workers)
+├── contexts/
+│   ├── users/                 # Cuenta: users
+│   ├── iam/                   # Acceso: credentials, roles, user_roles, login_attempts (+ rutas /login /register /logout)
+│   ├── profiles/              # Perfil: profiles, interests, profile_interests
+│   ├── social/                # posts, post_likes, comments, user_follows, messages,
+│   │                          #   blocks, notifications, reports (+ rutas de bloqueo/reporte/notificaciones)
+│   └── community/             # Grafo (Kosaraju) y recomendaciones: lectura sobre la vista social_media_users
+└── application/
+    └── registration.py        # Caso de uso: users + iam + profiles en una transacción
+```
+
+**Dataset:** `data/SocialMediaUsersDataset.csv` ya no es una tabla propia. Al primer arranque se reparte en
+`users`, `credentials`, `profiles` e `interests`, conservando los `UserID` originales. `social_media_users` es ahora
+una **vista de solo lectura** para que `contexts/community` siga funcionando sin reescribir sus consultas.
+
+**Bases antiguas:** si `social_media_users` era una tabla real, el arranque la migra solo y la conserva como
+`legacy_social_media_users`.
+
+**Administrador:** se crea al primer arranque con `ADMIN_USERNAME` / `ADMIN_PASSWORD` (rol `admin`).
 
 ## 🛠️ Instalación y Configuración
 
@@ -349,87 +369,18 @@ pip install -r requirements.txt
 
 ### Paso 4: Configurar Base de Datos MySQL
 
-1. **Crear la base de datos**:
+1. **Crear la base de datos vacía**:
 ```sql
 CREATE DATABASE connectly CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-2. **Configurar credenciales**:
-Edita la conexión en todos los archivos Python donde aparezca:
-```python
-DB_URL = 'mysql+mysqlconnector://root:Nicolas20@localhost:3306/connectly'
-```
-Cambia `root` y `Nicolas20` por tu usuario y contraseña de MySQL.
+2. **Conexión**: la app lee `DATABASE_URL` (ver `.env.example`). Si no existe, usa el respaldo local `mysql+pymysql://root:Nicolas20@localhost:3306/connectly` definido en `Connectly/services/db.py`.
 
-3. **Archivos a editar**:
-   - [`app.py`](Connectly/app.py) línea 20
-   - [`appconnect.py`](Connectly/appconnect.py) línea 7
-   - [`create_posts_table.py`](Connectly/create_posts_table.py) línea 6
-   - [`create_messages_table.py`](Connectly/create_messages_table.py) línea 6
-   - [`create_user_follows_table.py`](Connectly/create_user_follows_table.py) línea 6
-   - [`generate_user_profiles.py`](Connectly/generate_user_profiles.py) línea 6
+### Paso 5: Tablas y datos (automático)
 
-### Paso 5: Importar Dataset y Crear Tablas
-
-```bash
-# 1. Insertar usuarios desde CSV
-python appconnect.py
-
-# 2. Agregar columnas de perfil
-python generate_user_profiles.py
-
-# 3. Crear tabla de posts
-python create_posts_table.py
-
-# 4. Crear tabla de messages
-python create_messages_table.py
-
-# 5. Crear tabla de user_follows
-python create_user_follows_table.py
-```
-
-### Paso 6: Crear Tablas Adicionales
-
-Ejecuta estos comandos SQL manualmente:
-
-```sql
--- Tabla de comentarios
-CREATE TABLE IF NOT EXISTS comments (
-  CommentID   INT          NOT NULL AUTO_INCREMENT,
-  PostID      INT          NOT NULL,
-  UserID      BIGINT       NOT NULL,
-  Content     TEXT         NOT NULL,
-  CommentDate DATETIME     NOT NULL,
-  PRIMARY KEY (CommentID),
-  INDEX idx_comments_post (PostID),
-  INDEX idx_comments_user (UserID),
-  CONSTRAINT fk_comments_post
-    FOREIGN KEY (PostID)
-    REFERENCES posts(PostID)
-    ON DELETE CASCADE,
-  CONSTRAINT fk_comments_user
-    FOREIGN KEY (UserID)
-    REFERENCES social_media_users(UserID)
-    ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Tabla de likes
-CREATE TABLE IF NOT EXISTS post_likes (
-  PostID INT    NOT NULL,
-  UserID BIGINT NOT NULL,
-  PRIMARY KEY (PostID, UserID),
-  INDEX idx_likes_post (PostID),
-  INDEX idx_likes_user (UserID),
-  CONSTRAINT fk_likes_post
-    FOREIGN KEY (PostID)
-    REFERENCES posts(PostID)
-    ON DELETE CASCADE,
-  CONSTRAINT fk_likes_user
-    FOREIGN KEY (UserID)
-    REFERENCES social_media_users(UserID)
-    ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
+Al ejecutar la app (`bootstrap_database` en `services/bootstrap.py`):
+- `services/schema.py` crea las tablas definidas en `services/models.py` si no existen y actualiza bases antiguas.
+- `services/seed.py` carga el CSV solo si `social_media_users` está vacía (no duplica datos).
 
 ### Paso 7: Configurar Tailwind CSS (Opcional)
 

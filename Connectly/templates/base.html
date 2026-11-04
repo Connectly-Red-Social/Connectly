@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Connectly{% endblock %} · Connectly</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='output.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/2.8.0/alpine.js" defer></script>
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-100 font-[Poppins]" data-me="{{ g.user.user_id if g.user else '' }}">
+    {% include 'sidebar.html' %}
+
+    <main class="lg:ml-[300px] pt-20 lg:pt-8 px-4 sm:px-8 pb-8 min-h-screen" id="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <div id="toast-root" class="fixed top-4 right-4 z-[60] flex flex-col gap-2 w-[calc(100%-2rem)] max-w-sm pointer-events-none"></div>
+    <div id="flash-data" class="hidden" data-messages='{{ get_flashed_messages(with_categories=true)|tojson|forceescape }}'></div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

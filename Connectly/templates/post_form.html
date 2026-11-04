@@ -1,72 +1,70 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crear Publicación</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='output.css') }}">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
-</head>
-<body class="bg-gray-100 font-[Poppins]">
-    
-    <div class="lg:w-[300px] fixed lg:relative inset-y-0 z-40 bg-gray-900">
-        {% include 'sidebar.html' %}
+{% extends 'base.html' %}
+{% block title %}Crear publicación{% endblock %}
+{% block content %}
+<div class="flex justify-center items-start lg:items-center min-h-[80vh]">
+    <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border-t-4 border-blue-500">
+        <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Crear una nueva publicación</h2>
+
+        {% if error %}
+        <div class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm" role="alert">{{ error }}</div>
+        {% endif %}
+
+        <form id="postForm" action="{{ url_for('create_post') }}" method="post" enctype="multipart/form-data" class="space-y-6">
+            <div class="relative">
+                <textarea name="content" id="postContent" maxlength="2000" placeholder="¿Qué estás pensando?" required
+                          class="w-full h-32 p-4 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-300 resize-none bg-gray-100">{{ content or '' }}</textarea>
+                <span id="postCount" class="absolute bottom-2 right-3 text-xs text-gray-400">2000</span>
+            </div>
+
+            <label class="flex flex-col items-center justify-center space-y-2 bg-blue-50 p-4 rounded-lg cursor-pointer hover:bg-blue-100 transition duration-300 border border-dashed border-blue-500">
+                <i class="bi bi-image text-3xl text-blue-500"></i>
+                <span class="text-blue-600 font-medium" id="fileLabel">Seleccionar imagen (opcional)</span>
+                <input type="file" name="image" id="imageInput" accept="image/png,image/jpeg,image/gif,image/webp" class="hidden">
+            </label>
+
+            <div id="previewContainer" class="hidden relative">
+                <img id="imagePreview" alt="Vista previa" class="w-full h-48 object-cover rounded-lg shadow-md">
+                <button type="button" id="removeImage" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 hover:bg-red-600" aria-label="Quitar imagen">&times;</button>
+            </div>
+
+            <button type="submit" id="submitBtn" class="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 shadow-md disabled:opacity-60">
+                Publicar
+            </button>
+        </form>
     </div>
+</div>
+{% endblock %}
 
-    <div class="lg:ml-[300px] p-8 mt-16 lg:mt-0 flex justify-center items-start lg:items-center min-h-screen bg-gray-50" id="main-content">
-        <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-lg transform transition-all duration-300 hover:shadow-2xl border-t-4 border-blue-500 mt-16 lg:mt-0">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">Crear una nueva publicación</h2>
-            <form action="{{ url_for('create_post') }}" method="post" enctype="multipart/form-data" class="space-y-6">
-                
-                <textarea 
-                    name="content" 
-                    placeholder="¿Qué estás pensando?" 
-                    class="w-full h-32 p-4 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition duration-300 resize-none bg-gray-100" 
-                    required></textarea>
+{% block scripts %}
+<script>
+(function () {
+    const input = document.getElementById('imageInput');
+    const preview = document.getElementById('imagePreview');
+    const box = document.getElementById('previewContainer');
+    const label = document.getElementById('fileLabel');
+    const MAX = 8 * 1024 * 1024;
 
-                <label class="flex flex-col items-center justify-center space-y-2 bg-blue-50 p-4 rounded-lg cursor-pointer hover:bg-blue-100 transition duration-300 border border-dashed border-blue-500">
-                    <svg class="w-8 h-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.414 6.414a2 2 0 11-2.828-2.828l6.414-6.414a2 2 0 112.828 2.828zM15 13l6-6M9 13h6"></path>
-                    </svg>
-                    <span class="text-blue-600 font-medium">Seleccionar imagen</span>
-                    <input type="file" name="image" accept="image/*" class="hidden" onchange="previewImage(event)">
-                </label>
+    function clearImage() {
+        input.value = ''; preview.removeAttribute('src');
+        box.classList.add('hidden'); label.textContent = 'Seleccionar imagen (opcional)';
+    }
+    input.addEventListener('change', function () {
+        const file = input.files[0];
+        if (!file) return clearImage();
+        if (file.size > MAX) { Connectly.toast('La imagen supera el máximo de 8 MB.', 'error'); return clearImage(); }
+        const reader = new FileReader();
+        reader.onload = e => { preview.src = e.target.result; box.classList.remove('hidden'); label.textContent = file.name; };
+        reader.readAsDataURL(file);
+    });
+    document.getElementById('removeImage').addEventListener('click', clearImage);
 
-                <div id="previewContainer" class="mt-4">
-                    <img id="imagePreview" class="w-full h-48 object-cover rounded-lg shadow-md hidden">
-                </div>
+    const text = document.getElementById('postContent'), count = document.getElementById('postCount');
+    const sync = () => { count.textContent = text.maxLength - text.value.length; };
+    text.addEventListener('input', sync); sync();
 
-                <button 
-                    type="submit" 
-                    class="w-full py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 shadow-md">
-                    Publicar
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        function previewImage(event) {
-            const previewContainer = document.getElementById('previewContainer');
-            const imagePreview = document.getElementById('imagePreview');
-            const file = event.target.files[0];
-
-            if (file) {
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
-                    imagePreview.classList.remove('hidden');
-                };
-
-                reader.readAsDataURL(file);
-            } else {
-                imagePreview.src = '';
-                imagePreview.classList.add('hidden');
-            }
-        }
-    </script>
-</body>
-</html>
+    document.getElementById('postForm').addEventListener('submit', function () {
+        document.getElementById('submitBtn').disabled = true;   // evita publicar dos veces
+    });
+})();
+</script>
+{% endblock %}

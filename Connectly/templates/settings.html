@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import avatar %}
+{% block title %}Ajustes{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-8">
+    <h1 class="text-3xl font-bold text-gray-800">Ajustes de la cuenta</h1>
+
+    {# ---------- Perfil ---------- #}
+    <section class="bg-white rounded-xl shadow-lg p-6 sm:p-8 border-t-4 border-blue-500">
+        <h2 class="text-xl font-semibold text-gray-800 mb-1">Perfil</h2>
+        <p class="text-gray-500 text-sm mb-6">Así te ven las demás personas en Connectly.</p>
+
+        <form action="{{ url_for('settings_profile') }}" method="post" enctype="multipart/form-data" class="space-y-5" id="profileForm">
+            <div class="flex items-center gap-4">
+                <img id="avatarPreview" src="{{ info.get('avatar_url') or url_for('static', filename='images/user1.png') }}" data-avatar alt="Tu foto de perfil"
+                     class="w-20 h-20 rounded-full object-cover border-4 border-blue-500">
+                <label class="btn-secondary cursor-pointer">
+                    <i class="bi bi-camera mr-2"></i>Cambiar foto
+                    <input type="file" name="avatar" id="avatarInput" accept="image/png,image/jpeg,image/gif,image/webp" class="hidden">
+                </label>
+            </div>
+
+            <div>
+                <label for="display_name" class="field-label">Nombre</label>
+                <input type="text" id="display_name" name="display_name" class="field" maxlength="255" required value="{{ info.get('display_name', '') }}">
+            </div>
+
+            <div>
+                <label for="bio" class="field-label">Biografía</label>
+                <textarea id="bio" name="bio" rows="3" maxlength="500" class="field resize-none" placeholder="Cuéntanos algo sobre ti">{{ info.get('bio') or '' }}</textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label for="gender" class="field-label">Género</label>
+                    <select id="gender" name="gender" class="field">
+                        <option value="">Prefiero no decirlo</option>
+                        {% for g_ in genders %}<option value="{{ g_ }}" {{ 'selected' if info.get('gender') == g_ }}>{{ g_ }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="birth_date" class="field-label">Fecha de nacimiento</label>
+                    <input type="date" id="birth_date" name="birth_date" class="field" value="{{ info.birth_date.isoformat() if info.get('birth_date') else '' }}">
+                </div>
+                <div>
+                    <label for="city" class="field-label">Ciudad</label>
+                    <input type="text" id="city" name="city" class="field" maxlength="255" value="{{ info.get('city') or '' }}">
+                </div>
+                <div>
+                    <label for="country" class="field-label">País</label>
+                    <input type="text" id="country" name="country" class="field" maxlength="255" value="{{ info.get('country') or '' }}">
+                </div>
+            </div>
+
+            <fieldset>
+                <legend class="field-label">Intereses <span class="font-normal text-gray-400">(elige de 1 a 3; el primero será el principal)</span></legend>
+                <div id="interestGrid" class="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {% set mine = info.get('interests', []) %}
+                    {% for name in interest_options %}
+                    <label class="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg cursor-pointer text-sm hover:bg-blue-50 has-[:checked]:bg-blue-50 has-[:checked]:border-blue-500">
+                        <input type="checkbox" name="interests" value="{{ name }}" class="accent-blue-500" {{ 'checked' if name in mine }}>
+                        <span class="truncate">{{ name }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+
+            <div class="flex justify-end gap-3">
+                <a href="{{ url_for('profile', user_id=g.user.user_id) }}" class="btn-secondary">Cancelar</a>
+                <button type="submit" class="btn-primary">Guardar cambios</button>
+            </div>
+        </form>
+    </section>
+
+    {# ---------- Contraseña ---------- #}
+    <section id="password" class="bg-white rounded-xl shadow-lg p-6 sm:p-8 border-t-4 border-teal-500">
+        <h2 class="text-xl font-semibold text-gray-800 mb-1">Contraseña</h2>
+        <p class="text-gray-500 text-sm mb-6">Usa al menos 8 caracteres.</p>
+        <form action="{{ url_for('settings_password') }}" method="post" class="space-y-5">
+            <div>
+                <label for="current_password" class="field-label">Contraseña actual</label>
+                <input type="password" id="current_password" name="current_password" class="field" required autocomplete="current-password">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                    <label for="new_password" class="field-label">Nueva contraseña</label>
+                    <input type="password" id="new_password" name="new_password" class="field" minlength="8" required autocomplete="new-password">
+                </div>
+                <div>
+                    <label for="confirm_password" class="field-label">Confirmar nueva contraseña</label>
+                    <input type="password" id="confirm_password" name="confirm_password" class="field" minlength="8" required autocomplete="new-password">
+                </div>
+            </div>
+            <div class="flex justify-end"><button type="submit" class="btn-primary">Cambiar contraseña</button></div>
+        </form>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    // Vista previa del avatar
+    const input = document.getElementById('avatarInput'), preview = document.getElementById('avatarPreview');
+    input.addEventListener('change', function () {
+        const file = input.files[0];
+        if (!file) return;
+        if (file.size > 8 * 1024 * 1024) { Connectly.toast('La imagen supera el máximo de 8 MB.', 'error'); input.value = ''; return; }
+        const reader = new FileReader();
+        reader.onload = e => { preview.src = e.target.result; };
+        reader.readAsDataURL(file);
+    });
+
+    // Máximo 3 intereses
+    const boxes = Array.from(document.querySelectorAll('#interestGrid input[type="checkbox"]'));
+    boxes.forEach(box => box.addEventListener('change', function () {
+        if (boxes.filter(b => b.checked).length > 3) {
+            box.checked = false;
+            Connectly.toast('Puedes elegir hasta 3 intereses.', 'error');
+        }
+    }));
+    document.getElementById('profileForm').addEventListener('submit', function (e) {
+        if (!boxes.some(b => b.checked)) { e.preventDefault(); Connectly.toast('Elige al menos un interés.', 'error'); }
+    });
+})();
+</script>
+{% endblock %}
